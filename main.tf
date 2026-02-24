@@ -19,7 +19,7 @@ provider "aws" {
 resource "aws_instance" "my_servers" {
   count         = 2 # We are telling Terraform to build exactly 2 instances
   ami           = "ami-0c7217cdde317cfec" # Standard Ubuntu AMI
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
 
   tags = {
     Name = "Server-${count.index + 1}"
