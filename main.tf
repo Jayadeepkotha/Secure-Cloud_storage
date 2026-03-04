@@ -67,7 +67,7 @@ resource "aws_instance" "my_web_server" {
 
 # 3. Print the Public IP so you can easily click it!
 output "website_url" {
-  description = "The public IP address of your Web UI"
+  description = "The public IP address of your Web UI is given below."
   value       = "http://${aws_instance.my_web_server.public_ip}"
 }
 
