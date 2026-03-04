@@ -1,0 +1,22 @@
+# Python virtual environment
+Myenv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE settings
+.vscode/
+.idea/
+
+# Terraform local files
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Sensitive local AWS config (if any)
+.aws/
