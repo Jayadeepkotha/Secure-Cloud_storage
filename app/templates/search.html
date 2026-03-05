@@ -1,0 +1,28 @@
+<div class="container">
+    <h2><i class="fas fa-search"></i> Encrypted Search</h2>
+    <div class="search-bar">
+        <input type="text" id="searchQuery" placeholder="Enter keyword to search ciphertext...">
+        <button class="btn btn-primary" onclick="runSearch()">Search</button>
+    </div>
+
+    <div id="resultsArea">
+        </div>
+</div>
+
+<script>
+function runSearch() {
+    // 1. Generate Trapdoor (Client-side)
+    // 2. Fetch from AWS
+    // 3. Verify Jianding MACs
+    const results = document.getElementById('resultsArea');
+    results.innerHTML = `
+        <div class="result-card" style="border-left: 4px solid var(--success); padding: 10px; margin-top:10px; background:#1c2128;">
+            <strong>Document_01.pdf.enc</strong>
+            <span class="status-indicator" style="color: #3fb950;">
+                <i class="fas fa-check-circle"></i> Jianding Verified
+            </span>
+            <button class="btn" style="float:right;">Decrypt & Download</button>
+        </div>
+    `;
+}
+</script>

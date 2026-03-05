@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCS | Secure Cloud Storage</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --accent: #58a6ff;
+            --text: #c9d1d9;
+            --border: #30363d;
+            --green: #238636;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            width: 90%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #8b949e;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 12px;
+            transition: transform 0.2s, border-color 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .card i {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin: 10px 0;
+            color: white;
+        }
+
+        .card p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #8b949e;
+        }
+
+        .status-footer {
+            margin-top: 40px;
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--green);
+        }
+
+        .dot {
+            height: 10px;
+            width: 10px;
+            background-color: var(--green);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <h1>SCS Protocol</h1>
+            <p>Advanced Client-Side Encryption with <strong>Hexie</strong> & <strong>Jianding</strong></p>
+        </div>
+
+        <div class="grid">
+            <a href="/upload" class="card">
+                <i class="fas fa-file-shield"></i>
+                <h2>Secure Upload</h2>
+                <p>Encrypt files locally using AES-256 and generate searchable index shares before uploading to AWS S3.</p>
+            </a>
+
+            <a href="/search" class="card">
+                <i class="fas fa-magnifying-glass-chart"></i>
+                <h2>Search Index</h2>
+                <p>Perform keyword searches over encrypted data. Verify result integrity using the Jianding MAC-chain.</p>
+            </a>
+        </div>
+
+        <div class="status-footer">
+            <span class="dot"></span> System Active: Local Encryption Keys Loaded
+        </div>
+    </div>
+
+</body>
+</html>

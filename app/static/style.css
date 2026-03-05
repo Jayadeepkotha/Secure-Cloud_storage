@@ -1,0 +1,49 @@
+:root {
+    --bg-color: #0d1117;
+    --card-bg: #161b22;
+    --accent: #58a6ff; /* AWS Blue */
+    --success: #238636;
+    --text: #c9d1d9;
+    --border: #30363d;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.container {
+    width: 90%;
+    max-width: 800px;
+    margin-top: 50px;
+    padding: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-primary { background-color: var(--accent); color: white; }
+.btn-primary:hover { opacity: 0.8; }
+
+.status-indicator {
+    font-size: 0.85rem;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    display: inline-block;
+}

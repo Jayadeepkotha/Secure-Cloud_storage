@@ -1,0 +1,38 @@
+<div class="container">
+    <h2><i class="fas fa-lock"></i> Secure Upload (SSE)</h2>
+    <p>Files are encrypted locally using AES + Hexie Indexing before reaching AWS.</p>
+    
+    <form id="uploadForm">
+        <input type="file" id="fileInput" class="custom-file-input">
+        <input type="text" id="keywords" placeholder="Keywords (comma separated)">
+        
+        <button type="submit" class="btn btn-primary" id="uploadBtn">
+            Encrypt & Upload
+        </button>
+    </form>
+
+    <div id="progressBox" style="display:none;">
+        <div class="status-indicator" style="background: #388ed1;">
+            Step 1: Generating Hexie Shares...
+        </div>
+        <div class="status-indicator" style="background: var(--success);">
+            Step 2: Pushing to S3...
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('uploadBtn');
+        const progress = document.getElementById('progressBox');
+        
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+        progress.style.display = "block";
+
+        // Logic to call your Flask /upload route goes here
+        // Note: In a real production app, encryption happens in JS 
+        // but for this project, we call your Python encryption.py
+    };
+</script>
