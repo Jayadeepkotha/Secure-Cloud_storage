@@ -1,0 +1,2 @@
+To deploy the infra : push the code to main branch
+To destroy infra : go to action and run the destroy workflow
