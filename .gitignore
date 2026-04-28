@@ -7,7 +7,11 @@ __pycache__/
 # IDE settings
 .vscode/
 .idea/
-
+*.json
+cloud_artifacts/
+*.logs
+logs/
+downloads/
 # Terraform local files
 **/.terraform/
 *.tfstate

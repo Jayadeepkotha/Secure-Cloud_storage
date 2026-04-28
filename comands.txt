@@ -1,2 +1,9 @@
 To deploy the infra : push the code to main branch
 To destroy infra : go to action and run the destroy workflow
+
+to run the web interface:
+ cd app > python app.py
+
+to cleanup all .json mappings and delete all local and cloud stored data:
+ cd app > python scs_cleanup.py > y
+
