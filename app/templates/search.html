@@ -1,28 +1,137 @@
-<div class="container">
-    <h2><i class="fas fa-search"></i> Encrypted Search</h2>
-    <div class="search-bar">
-        <input type="text" id="searchQuery" placeholder="Enter keyword to search ciphertext...">
-        <button class="btn btn-primary" onclick="runSearch()">Search</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SCS | Secure Vault Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="/">HOME</a> 
+        <a href="/upload">UPLOAD</a> 
+        <a href="/search">SEARCH</a>
+    </nav>
+    
+    <div class="container">
+        <h2>Secure Search Interface</h2>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <input type="text" id="keyword" placeholder="Search by keyword or ID...">
+            <button onclick="performSearch()">Query Vault</button>
+        </div>
+        
+        <div id="status-msg" style="margin-top: 20px; color: var(--neon-blue); font-family: monospace;"></div>
+        
+        <div id="results" class="results-grid"></div>
     </div>
 
-    <div id="resultsArea">
-        </div>
-</div>
+    <script>
+        /**
+         * Local state management for search results.
+         * Stores the matches returned from the local Inverted Index.
+         */
+        let currentResults = [];
+        let activeSearchTerm = "";
 
-<script>
-function runSearch() {
-    // 1. Generate Trapdoor (Client-side)
-    // 2. Fetch from AWS
-    // 3. Verify Jianding MACs
-    const results = document.getElementById('resultsArea');
-    results.innerHTML = `
-        <div class="result-card" style="border-left: 4px solid var(--success); padding: 10px; margin-top:10px; background:#1c2128;">
-            <strong>Document_01.pdf.enc</strong>
-            <span class="status-indicator" style="color: #3fb950;">
-                <i class="fas fa-check-circle"></i> Jianding Verified
-            </span>
-            <button class="btn" style="float:right;">Decrypt & Download</button>
-        </div>
-    `;
-}
-</script>
+        /**
+         * Queries the Flask backend to perform a lookup in the local DI (Inverted Index).
+         * This follows the SSE 'Search' phase where the trapdoor is checked against mappings.
+         */
+        async function performSearch() {
+            const kwInput = document.getElementById('keyword');
+            activeSearchTerm = kwInput.value.trim();
+            const resDiv = document.getElementById('results');
+            const statusMsg = document.getElementById('status-msg');
+
+            if (!activeSearchTerm) return;
+
+            statusMsg.innerText = "[SYSTEM]: Processing trapdoor lookup...";
+            resDiv.innerHTML = "";
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `keyword=${encodeURIComponent(activeSearchTerm)}`
+                });
+                
+                const data = await response.json();
+                currentResults = data.results;
+
+                if (currentResults.length === 0) {
+                    statusMsg.innerText = "[STATUS]: No matches found in local index.";
+                    resDiv.innerHTML = "<p>No encrypted records match this criteria.</p>";
+                    return;
+                }
+
+                statusMsg.innerText = `[STATUS]: ${currentResults.length} records identified for term: "${activeSearchTerm}"`;
+                
+                // Map results into the UI grid
+                resDiv.innerHTML = currentResults.map((file, index) => `
+                    <div class="file-card">
+                        <h3>${file.original}</h3>
+                        <p style="font-size: 0.8rem; color: #8b949e; overflow: hidden;">
+                            CONTENT HASH: ${file.s3_key.substring(0,24)}...
+                        </p>
+                        <button style="width:100%; margin-top: 10px;" 
+                                onclick="downloadFile(${index})">
+                            Retrieve & Decrypt
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                statusMsg.innerText = "[ERROR]: Communication failure with backend.";
+            }
+        }
+
+        /**
+         * Handles the retrieval of the ciphertext from S3 and local decryption.
+         * Converts the binary stream into a Blob for browser-side download.
+         */
+        async function downloadFile(index) {
+            const selected = currentResults[index];
+            const statusMsg = document.getElementById('status-msg');
+            
+            statusMsg.innerText = `[ACTION]: Requesting ciphertext for ${selected.original}...`;
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        selected: selected, 
+                        keyword: activeSearchTerm 
+                    })
+                });
+
+                if (!response.ok) throw new Error("Cryptographic verification or download failed.");
+
+                // Process the binary stream from the server
+                const blob = await response.blob();
+                
+                // Create a temporary object URL to trigger the native browser download dialog
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = selected.original;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup resources
+                window.URL.revokeObjectURL(url);
+                statusMsg.innerText = `[SUCCESS]: File decrypted and delivered: ${selected.original}`;
+
+            } catch (err) {
+                statusMsg.innerText = "[ERROR]: Local decryption or retrieval failed.";
+                console.error(err);
+            }
+        }
+
+        // Event listener for keyboard 'Enter' support
+        document.getElementById('keyword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') performSearch();
+        });
+    </script>
+</body>
+</html>

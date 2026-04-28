@@ -1,38 +1,49 @@
-<div class="container">
-    <h2><i class="fas fa-lock"></i> Secure Upload (SSE)</h2>
-    <p>Files are encrypted locally using AES + Hexie Indexing before reaching AWS.</p>
-    
-    <form id="uploadForm">
-        <input type="file" id="fileInput" class="custom-file-input">
-        <input type="text" id="keywords" placeholder="Keywords (comma separated)">
-        
-        <button type="submit" class="btn btn-primary" id="uploadBtn">
-            Encrypt & Upload
-        </button>
-    </form>
-
-    <div id="progressBox" style="display:none;">
-        <div class="status-indicator" style="background: #388ed1;">
-            Step 1: Generating Hexie Shares...
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SCS | Upload</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav><a href="/">HOME</a> <a href="/upload">UPLOAD</a> <a href="/search">SEARCH</a></nav>
+    <div class="container">
+        <h2>Local Encryption & Push</h2>
+        <div class="progress-container">
+            <div id="pCircle" class="progress-circle" data-progress="0"></div>
         </div>
-        <div class="status-indicator" style="background: var(--success);">
-            Step 2: Pushing to S3...
-        </div>
+        <input type="file" id="fileInput"><br>
+        <button onclick="uploadFile()">Encrypt & Upload to S3</button>
+        <p id="status" style="margin-top: 20px;"></p>
     </div>
-</div>
 
-<script>
-    document.getElementById('uploadForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('uploadBtn');
-        const progress = document.getElementById('progressBox');
-        
-        btn.disabled = true;
-        btn.innerText = "Processing...";
-        progress.style.display = "block";
+    <script>
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files[0]) return alert("Select a file!");
 
-        // Logic to call your Flask /upload route goes here
-        // Note: In a real production app, encryption happens in JS 
-        // but for this project, we call your Python encryption.py
-    };
-</script>
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    const circle = document.getElementById('pCircle');
+                    circle.style.background = `conic-gradient(#00f2fe ${percent}%, #333 ${percent}%)`;
+                    circle.setAttribute('data-progress', percent);
+                }
+            };
+
+            xhr.onload = function() {
+                const res = JSON.parse(xhr.responseText);
+                document.getElementById('status').innerText = res.message || res.error;
+            };
+
+            xhr.send(formData);
+        }
+    </script>
+</body>
+</html>
