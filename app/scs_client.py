@@ -4,13 +4,18 @@ import hashlib
 import json
 import uuid
 import re
+import requests
 from PyPDF2 import PdfReader 
-from encryption import encrypt_file
+from encryption import encrypt_file, derive_keys
 from aws_client import upload_file
+from dotenv import load_dotenv
 
-DF_MAP = "local_df.json"
-DI_MAP = "local_di.json"
-STATE_MAP = "local_di_state.json" # Added state tracking
+load_dotenv()
+
+# --- CONFIGURATION ---
+STATE_FILE = "local_hexie_state.json"
+EC2_HOSTNAME = os.getenv("EC2_HOSTNAME", "127.0.0.1")
+EC2_URL = f"http://{EC2_HOSTNAME}:5000"
 
 def load_json_state(filepath):
     if os.path.exists(filepath):
@@ -23,40 +28,45 @@ def load_json_state(filepath):
     return {}
 
 def get_clean_keywords(abs_path):
+    """Scans filenames and PDF content for searchable tokens."""
     raw_words = []
-    file_name = os.path.basename(abs_path)
-    raw_words.extend(re.split(r'[-_.\s]', file_name.lower()))
+    file_base = os.path.basename(abs_path)
     
+    # 1. Extract from filename (Split by common delimiters)
+    # Using lower() here immediately to normalize
+    raw_words.extend(re.split(r'[-_.\s]', file_base.lower()))
+    
+    # 2. Extract from PDF content
     try:
         if abs_path.endswith('.pdf'):
             reader = PdfReader(abs_path)
             for page in reader.pages:
                 text = page.extract_text()
-                if text: raw_words.extend(text.lower().split())
-    except:
-        pass
+                if text: 
+                    # Normalize text to lower case and split
+                    raw_words.extend(text.lower().split())
+        elif abs_path.endswith('.txt'):
+            with open(abs_path, 'r') as f:
+                raw_words.extend(f.read().lower().split())
+    except Exception as e:
+        print(f"⚠️ Content Scan Warning: {e}")
 
-    # Basic stop words
-    stop_words = {'the', 'and', 'for', 'this', 'that', 'with', 'from', 'your', 'will', 'pdf', 'enc'}
-    
-    # NEW: Coding word filter (skips common syntax/programming terms)
-    coding_words = {
-        'import', 'from', 'return', 'def', 'class', 'self', 'void', 'public', 
-        'private', 'string', 'int', 'float', 'print', 'const', 'true', 'false',
-        'null', 'undefined', 'async', 'await', 'function', 'var', 'let', 'typeof'
-    }
+    # Refined stop words - 'txt' is a file extension, usually not a useful keyword
+    stop_words = {'the', 'and', 'for', 'this', 'that', 'with', 'from', 'your', 'will', 'pdf', 'enc', 'txt'}
+    coding_words = {'import', 'from', 'return', 'def', 'class', 'self', 'void', 'public', 'private'}
 
     useful = set()
     for word in raw_words:
+        # Remove non-alphanumeric characters
         clean_word = re.sub(r'[^a-z0-9]', '', word)
         
-        # Filter Logic
-        is_coding = clean_word in coding_words
-        if clean_word.isalpha() and len(clean_word) >= 3 and clean_word not in stop_words and not is_coding:
-            useful.add(clean_word)
-        elif clean_word.isdigit() and len(clean_word) >= 9:
-            useful.add(clean_word)
-            
+        # VALIDATION: Ensure keyword isn't a stop word and meets length requirements
+        if clean_word not in stop_words and clean_word not in coding_words:
+            if clean_word.isalpha() and len(clean_word) >= 3:
+                useful.add(clean_word)
+            elif clean_word.isdigit() and len(clean_word) >= 9:
+                useful.add(clean_word)
+                
     return list(useful)
 
 def run_upload(abs_path):
@@ -65,47 +75,75 @@ def run_upload(abs_path):
         return
 
     file_base = os.path.basename(abs_path)
-    print(f"🔍 Extracting metadata from: {file_base}")
-    keywords = get_clean_keywords(abs_path)
-
-    # Load all three local states
-    df = load_json_state(DF_MAP)
-    di = load_json_state(DI_MAP)
-    state = load_json_state(STATE_MAP)
+    print(f"\n🚀 Starting Hexie Upload: {file_base}")
     
-    # Algorithm 2: Generate unique S3 key
-    # In a full Hexie implementation, this UUID would be derived from the secret share in state.json
+    keywords = get_clean_keywords(abs_path)
+    if not keywords:
+        print("⚠️ No valid keywords found. Upload aborted.")
+        return
+        
+    print(f"🔍 Extracted {len(keywords)} tokens: {keywords[:10]}...")
+
+    # Local Encryption
     cloud_id = hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
     s3_key = f"{cloud_id}.enc"
-
-    # Update Forward Index (File -> Keywords)
-    df[file_base] = keywords
     
-    # Update Inverted Index (Keyword -> Cloud File)
-    for kw in keywords:
-        if kw not in di: 
-            di[kw] = []
-            # Initialize a new secret share/state for this new keyword
-            state[kw] = {"last_share": hashlib.sha256(os.urandom(16)).hexdigest()}
-        
-        di[kw].append({"s3_key": s3_key, "original": file_base})
-
     print(f"🔒 Encrypting locally...")
     with open(abs_path, "rb") as f:
+        # Note: encrypt_file uses the original filename as context
         ciphertext = encrypt_file(f.read(), file_base)
 
-    os.makedirs("cloud_artifacts", exist_ok=True)
-    enc_path = os.path.join("cloud_artifacts", s3_key)
-    with open(enc_path, "wb") as f:
+    temp_enc_path = os.path.join("temp_uploads", s3_key)
+    os.makedirs("temp_uploads", exist_ok=True)
+    with open(temp_enc_path, "wb") as f:
         f.write(ciphertext)
 
-    print(f"☁️ Uploading to S3: {s3_key}")
-    if upload_file(enc_path, s3_key):
-        # MANDATORY: Save all three files to persist the state
-        with open(DF_MAP, "w", encoding="utf-8") as f: json.dump(df, f, indent=4)
-        with open(DI_MAP, "w", encoding="utf-8") as f: json.dump(di, f, indent=4)
-        with open(STATE_MAP, "w", encoding="utf-8") as f: json.dump(state, f, indent=4)
-        print(f"✅ Success! {len(keywords)} tokens indexed and state updated.")
+    # S3 Upload
+    print(f"☁️ Uploading to S3...")
+    if not upload_file(temp_enc_path, s3_key):
+        return
+
+    # Hexie Index Update
+    state = load_json_state(STATE_FILE)
+    print(f"🔗 Linking {len(keywords)} keywords to EC2...")
+    
+    success_count = 0
+    for kw in keywords:
+        kt1, _ = derive_keys(kw)
+        
+        # Algorithm 2: Chain generation[cite: 1]
+        pi_prev_hex = state.get(kw, (b'1' * 16).hex())
+        pi_prev = bytes.fromhex(pi_prev_hex)
+        
+        r = os.urandom(16)
+        new_pi = bytes(a ^ b for a, b in zip(pi_prev, r))
+        
+        c_w = hashlib.sha256(new_pi).hexdigest()
+        mask = hashlib.sha256(kt1 + new_pi).digest()[:16]
+        c_a = bytes(a ^ b for a, b in zip(r, mask)).hex()
+
+        try:
+            resp = requests.post(f"{EC2_URL}/update", json={
+                "c_w": c_w, 
+                "c_a": c_a, 
+                "c_id": s3_key, 
+                "original": file_base
+            }, timeout=5)
+            
+            if resp.status_code == 200:
+                state[kw] = new_pi.hex()
+                success_count += 1
+        except Exception as e:
+            print(f"❌ Failed to reach EC2 for keyword '{kw}': {e}")
+
+    # Save finalized local state
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, indent=4)
+    
+    if os.path.exists(temp_enc_path):
+        os.remove(temp_enc_path)
+        
+    print(f"✅ Success! {success_count}/{len(keywords)} tokens linked in XOR chain.")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

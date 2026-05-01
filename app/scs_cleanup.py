@@ -3,12 +3,15 @@ import shutil
 import json
 import boto3
 from botocore.exceptions import ClientError
+from dotenv import load_dotenv
 
-BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "fallback-if-not-set")
+load_dotenv()
 
+BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "fallback")
+EC2_HOSTNAME = os.getenv("EC2_HOSTNAME", "127.0.0.1")
 def clean_local_folders():
     """Wipes artifacts, downloads, and logs."""
-    folders = ['cloud_artifacts', 'downloads', 'logs']
+    folders = ['cloud_artifacts', 'downloads', 'logs','temp_uploads']
     for folder in folders:
         if os.path.exists(folder):
             print(f"🧹 Clearing folder: {folder}...")
@@ -20,7 +23,7 @@ def clean_local_folders():
 
 def clean_json_states():
     """Deletes the persistent local indices and state files."""
-    state_files = ['local_df.json', 'local_di.json', 'local_di_state.json']
+    state_files = ['local_df.json', 'local_di.json', 'local_di_state.json','local_hexie_state.json']
     for file in state_files:
         if os.path.exists(file):
             print(f"🗑️ Deleting state file: {file}...")

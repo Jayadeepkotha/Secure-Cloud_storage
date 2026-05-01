@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, jsonify
-from scs_client import run_upload, load_json_state, DI_MAP
 from scs_search import perform_search, decrypt_and_save
+from scs_client import run_upload
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'temp_uploads'

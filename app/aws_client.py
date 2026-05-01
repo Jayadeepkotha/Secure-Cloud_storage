@@ -1,8 +1,13 @@
 import boto3 
 from botocore.exceptions import ClientError, NoCredentialsError
 import os
+from dotenv import load_dotenv
 
-BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "fallback-if-not-set")
+load_dotenv()
+
+BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "fallback")
+EC2_HOSTNAME = os.getenv("EC2_HOSTNAME", "127.0.0.1")
+
 def get_s3_client():
     return boto3.client("s3", region_name="us-east-1") 
 

@@ -2,3 +2,5 @@ Flask
 boto3
 cryptography
 PyPDF2
+requests
+dotenv

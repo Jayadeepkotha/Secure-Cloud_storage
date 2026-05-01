@@ -58,6 +58,14 @@ resource "aws_security_group" "web_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  
+  # HEXIE SERVER PORT
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   egress {
     from_port   = 0
@@ -69,7 +77,7 @@ resource "aws_security_group" "web_sg" {
 
 # --- 4. UBUNTU EC2 ---
 resource "aws_instance" "ubuntu_server" {
-  ami           = "ami-008622f29a0929d42" 
+  ami           = "ami-091138d0f0d41ff90" 
   instance_type = "t3.micro"
   key_name      = aws_key_pair.generated_key.key_name
   vpc_security_group_ids = [aws_security_group.web_sg.id]
