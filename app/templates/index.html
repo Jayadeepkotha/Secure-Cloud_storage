@@ -6,18 +6,54 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <nav>
-        <a href="/">HOME</a>
-        <a href="/upload">UPLOAD</a>
-        <a href="/search">SEARCH</a>
-    </nav>
-    <div class="container">
-        <h1>HEXIE VAULT</h1>
-        <p>Symmetric Searchable Encryption Interface</p>
-        <div style="margin-top: 40px;">
-            <button onclick="location.href='/upload'">Secure a New File</button>
-            <button onclick="location.href='/search'">Search the Cloud</button>
+    <header class="page-header">
+        <div class="brand">
+            <span class="brand-mark">SCS</span>
+            <div>
+                <h1>Hexie Vault</h1>
+                <p>Secure searchable encryption for cloud-stored files.</p>
+            </div>
         </div>
-    </div>
+        <nav class="main-nav">
+            <a href="/">HOME</a>
+            <a href="/upload">UPLOAD</a>
+            <a href="/search">SEARCH</a>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        <section class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">Secure Cloud Storage</span>
+                <h2>Local encryption. searchable vaults. safe retrieval.</h2>
+                <p>Upload files encrypted locally before they ever leave your browser, then query encrypted records with secure searchable encryption.</p>
+                <div class="hero-actions">
+                    <button onclick="location.href='/upload'">Encrypt & Upload</button>
+                    <button class="secondary" onclick="location.href='/search'">Search Vault</button>
+                </div>
+            </div>
+            <div class="hero-graphic">
+                <div class="glass-panel">
+                    <p>Encrypted file storage</p>
+                    <div class="status-pill">0 files uploaded</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="feature-grid">
+            <article>
+                <h3>Private upload</h3>
+                <p>Files are encrypted locally before transfer, keeping raw data hidden from the cloud.</p>
+            </article>
+            <article>
+                <h3>Searchable vault</h3>
+                <p>Query encrypted metadata and access matching files without revealing keywords to the server.</p>
+            </article>
+            <article>
+                <h3>Safe retrieval</h3>
+                <p>Download and decrypt only what you need, with transparency and audit-friendly controls.</p>
+            </article>
+        </section>
+    </main>
 </body>
 </html>
