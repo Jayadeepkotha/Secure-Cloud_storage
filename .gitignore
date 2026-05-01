@@ -37,3 +37,4 @@ Thumbs.db
 # Ignore the generated SSH private key
 access.pem
 *.conf
+.env

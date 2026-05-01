@@ -1,8 +1,8 @@
 import boto3 
 from botocore.exceptions import ClientError, NoCredentialsError
+import os
 
-BUCKET_NAME = "scs-encrypted-files-bucket"
-
+BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "fallback-if-not-set")
 def get_s3_client():
     return boto3.client("s3", region_name="us-east-1") 
 

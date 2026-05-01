@@ -4,8 +4,7 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-# Configuration - Matches your aws_client.py
-BUCKET_NAME = "scs-encrypted-files-bucket"
+BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "fallback-if-not-set")
 
 def clean_local_folders():
     """Wipes artifacts, downloads, and logs."""

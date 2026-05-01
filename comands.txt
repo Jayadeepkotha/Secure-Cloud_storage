@@ -39,3 +39,15 @@
    => cd infrastructure/terraform
    => chmode 400 access.pem
    => ssh -i access.pem ubuntu@<INSTANCE_IP>
+
+========================================================================================
+
+## Create an .env in app/ and 
+   set -> S3_BUCKET_NAME="ur s3 bucket name that stores files not .tfstate one"
+
+To run the WEB APP
+=> cd app 
+=> python app.py
+
+To upload or retrieve any file from s3
+=> First set the s3 bucket name in aws_client.py  scs_cleanup.py and scs_client.py
