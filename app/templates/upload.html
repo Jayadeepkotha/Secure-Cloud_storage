@@ -6,21 +6,51 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <nav><a href="/">HOME</a> <a href="/upload">UPLOAD</a> <a href="/search">SEARCH</a></nav>
-    <div class="container">
-        <h2>Local Encryption & Push</h2>
-        <div class="progress-container">
-            <div id="pCircle" class="progress-circle" data-progress="0"></div>
+    <header class="page-header">
+        <div class="brand">
+            <span class="brand-mark">SCS</span>
+            <div>
+                <h1>File Encryption</h1>
+                <p>Upload files securely to the cloud with local encryption.</p>
+            </div>
         </div>
-        <input type="file" id="fileInput"><br>
-        <button onclick="uploadFile()">Encrypt & Upload to S3</button>
-        <p id="status" style="margin-top: 20px;"></p>
-    </div>
+        <nav class="main-nav">
+            <a href="/">HOME</a>
+            <a href="/upload">UPLOAD</a>
+            <a href="/search">SEARCH</a>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        <section class="upload-panel">
+            <div class="upload-card">
+                <h2>Encrypt & Upload</h2>
+                <p>Choose a file from your device and push it to secure cloud storage after local encryption.</p>
+
+                <label for="fileInput" class="file-picker">
+                    <span>Select a file</span>
+                    <input type="file" id="fileInput">
+                </label>
+
+                <div class="progress-container">
+                    <div id="pCircle" class="progress-circle" data-progress="0"></div>
+                </div>
+
+                <button class="primary-btn" onclick="uploadFile()">Encrypt & Upload to S3</button>
+
+                <p id="status" class="status-text"></p>
+            </div>
+        </section>
+    </main>
 
     <script>
         function uploadFile() {
             const fileInput = document.getElementById('fileInput');
-            if (!fileInput.files[0]) return alert("Select a file!");
+            const status = document.getElementById('status');
+            if (!fileInput.files[0]) {
+                status.innerText = 'Please select a file to upload.';
+                return;
+            }
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
@@ -32,14 +62,18 @@
                 if (e.lengthComputable) {
                     const percent = Math.round((e.loaded / e.total) * 100);
                     const circle = document.getElementById('pCircle');
-                    circle.style.background = `conic-gradient(#00f2fe ${percent}%, #333 ${percent}%)`;
+                    circle.style.background = `conic-gradient(var(--neon-blue) ${percent}%, #222 ${percent}%)`;
                     circle.setAttribute('data-progress', percent);
                 }
             };
 
             xhr.onload = function() {
                 const res = JSON.parse(xhr.responseText);
-                document.getElementById('status').innerText = res.message || res.error;
+                status.innerText = res.message || res.error;
+            };
+
+            xhr.onerror = function() {
+                status.innerText = 'Upload failed. Please try again.';
             };
 
             xhr.send(formData);
