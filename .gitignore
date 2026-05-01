@@ -24,3 +24,16 @@ Thumbs.db
 
 # Sensitive local AWS config (if any)
 .aws/
+
+# Ignore Terraform local state (if you ever run without S3)
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Ignore personal variable values
+*.tfvars
+*.tfvars.json
+
+# Ignore the generated SSH private key
+access.pem
+*.conf

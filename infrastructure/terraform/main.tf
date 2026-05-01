@@ -1,89 +1,88 @@
 terraform {
-  backend "s3" {
-    bucket = "amzn-terraform-s3-bucket" # Put your exact S3 bucket name here
-    key    = "state/terraform.tfstate"
-    region = "us-east-1"
-  }
+  backend "s3" {} 
+
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
+    aws   = { source = "hashicorp/aws", version = "~> 5.0" }
+    local = { source = "hashicorp/local", version = "2.5.1" }
+    tls   = { source = "hashicorp/tls", version = "4.0.5" }
   }
 }
-
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 }
 
+# --- 1. SSH KEY GENERATION ---
+resource "tls_private_key" "main_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
 
-# 1. Create the new Security Group
-resource "aws_security_group" "web_sg" {
-  name        = "web-server-sg"
-  description = "Allow HTTP and SSH traffic"
+resource "aws_key_pair" "generated_key" {
+  key_name   = "access-key"
+  public_key = tls_private_key.main_key.public_key_openssh
+}
 
-  # Inbound rules (Who can connect TO your server)
-  ingress {
-    description = "Allow HTTP (Web Traffic)"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # 0.0.0.0/0 means anyone on the internet can see the website
+resource "local_file" "ssh_key" {
+  content         = tls_private_key.main_key.private_key_pem
+  filename        = "${path.module}/access.pem"
+  file_permission = "0400"
+}
+
+# --- 2. S3 BUCKET FOR ENCRYPTED FILES ---
+resource "aws_s3_bucket" "file_storage" {
+  bucket        = var.file_storage_bucket_name
+  force_destroy = true 
+
+  tags = {
+    Name = "EncryptedFileStorage"
   }
+}
 
+# --- 3. SECURITY GROUP (OPEN TO WORLD) ---
+resource "aws_security_group" "web_sg" {
+  name        = "project-sg-open"
+  
+  # Allow SSH from ANYWHERE
   ingress {
-    description = "Allow SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["38.183.101.34/32"] # Only allow SSH from your IP address (replace with your actual IP)
+    cidr_blocks = ["0.0.0.0/0"] 
   }
-  ingress {
-  description = "Allow HTTPS (Secure Web Traffic)"
-  from_port   = 443
-  to_port     = 443
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-}
 
-  # Outbound rules (What the server can connect out to)
+  # Allow HTTP from ANYWHERE
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
-    protocol    = "-1" # -1 means all protocols
-    cidr_blocks = ["0.0.0.0/0"] 
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
-# Create an S3 bucket for secure file storage
-resource "aws_s3_bucket" "secure_storage_bucket" {
-  bucket = "scs-encrypted-files-bucket" 
-  force_destroy = true  # Allow bucket to be deleted even if it contains objects (use with caution in production!)
-  tags = {
-    Name        = "SecureCloudStorageBucket"
-    Environment = "Dev"
-  }
-}
-
-
-resource "aws_instance" "my_web_server" {
-  ami           = "ami-008622f29a0929d42" # Standard Ubuntu AMI
+# --- 4. UBUNTU EC2 ---
+resource "aws_instance" "ubuntu_server" {
+  ami           = "ami-008622f29a0929d42" 
   instance_type = "t3.micro"
-
-  # Attach the Security Group we just created above
+  key_name      = aws_key_pair.generated_key.key_name
   vpc_security_group_ids = [aws_security_group.web_sg.id]
-  key_name = "SCS-key-pair" # key pair for ssh access
+
   tags = {
-    Name = "MySimpleWebServer"
+    Name = "Ubuntu-EC2-Server"
   }
 }
 
-
-# 3. Print the Public IP so you can easily click it!
-output "website_url" {
-  description = "The public IP address of your Web UI is given below."
-  value       = "http://${aws_instance.my_web_server.public_ip}"
+output "instance_ip" {
+  value = aws_instance.ubuntu_server.public_ip
 }
 
-
+output "ssh_command" {
+  value = "ssh -i access.pem ubuntu@${aws_instance.ubuntu_server.public_ip}"
+}
