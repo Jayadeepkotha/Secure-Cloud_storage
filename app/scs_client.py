@@ -108,7 +108,9 @@ def run_upload(abs_path):
     # Hexie Index Update
     state = load_json_state(STATE_FILE)
     print(f" Linking {len(keywords)} keywords to EC2...")
-    
+    with open(temp_enc_path, "rb") as f:
+       file_content = f.read()
+       file_hash = hashlib.sha256(file_content).hexdigest()
     success_count = 0
     for kw in keywords:
         kt1, k2, kv = derive_keys(kw) # Get the verification key
@@ -125,7 +127,7 @@ def run_upload(abs_path):
         c_a = bytes(a ^ b for a, b in zip(r, mask)).hex()
         
         # Algorithm 3: Generation of Verification Tag (Jianding)
-        tag_content = c_w.encode() + s3_key.encode()
+        tag_content = c_w.encode() + s3_key.encode()+file_hash.encode()
         v = hmac.new(kv, tag_content, hashlib.sha256).hexdigest()
 
         try:
@@ -134,8 +136,9 @@ def run_upload(abs_path):
                 "c_a": c_a, 
                 "c_id": s3_key, 
                 "original": file_base,
-                "v":v                   # Send the Jianding seal
-            }, timeout=5)
+                "v":v,
+                "f_hash":file_hash  # Send the Jianding seal
+            }, timeout=5)  
             
             if resp.status_code == 200:
                 state[kw] = new_pi.hex()

@@ -107,6 +107,11 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({selected, keyword: activeSearchTerm})
                 });
+                if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Security/Storage Alert: ${errorData.error}`); // Shows "File not found"
+                return;
+            }
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
